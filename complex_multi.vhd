@@ -87,11 +87,50 @@ package body complex_numbers is
 	end "*";
 end complex_numbers;
 
+	signal hc :unsigned (9 downto 0); 
+	signal vc :unsigned (9 downto 0); 
+	signal hs :STD_LOGIC;
+	signal vs :STD_LOGIC;
+	signal clk_65 :STD_LOGIC;
+
+
 architecture Behavioral of complex_multi is
 
+begin	
+process(clk_65) begin
 
-
-begin
+	if ( clk_65'event and clk_65 = '1') then
+		if (hc = 1344-1) then 
+			hc <= (others => '0');
+			if (vc = 806-1) then
+				vc <= (others => '0');
+			else
+				vc <= vc+1;
+			end if;
+		else
+			hc <= hc+1;
+		end if;
+			
+			
+		if ( hc = 1024+24-1 ) then
+			hs <= '0';
+		elsif ( hc = 1024+24+136-1 ) then
+			hs <= '1';
+		else
+			hs <= hs;
+		end if;
+		
+			
+		if ( vc = 768+3-1 ) then
+			vs <= '0';
+		elsif ( vc = 768+3+6-1 ) then
+			vs <= '1';
+		else
+			vs <= vs;
+		end if;
+	
+	end if;
+	end process;
 
 
 end Behavioral;
