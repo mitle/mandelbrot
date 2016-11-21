@@ -98,8 +98,8 @@ architecture Behavioral of complex_multi is
 
 begin	
 process(clk_65) begin
-
 	if ( clk_65'event and clk_65 = '1') then
+		--hc,vc beállítás
 		if (hc = 1344-1) then 
 			hc <= (others => '0');
 			if (vc = 806-1) then
@@ -110,8 +110,7 @@ process(clk_65) begin
 		else
 			hc <= hc+1;
 		end if;
-			
-			
+		--hs beállítás
 		if ( hc = 1024+24-1 ) then
 			hs <= '0';
 		elsif ( hc = 1024+24+136-1 ) then
@@ -119,18 +118,40 @@ process(clk_65) begin
 		else
 			hs <= hs;
 		end if;
-		
-			
+		--vs beállítás	
 		if ( vc = 768+3-1 ) then
 			vs <= '0';
 		elsif ( vc = 768+3+6-1 ) then
 			vs <= '1';
 		else
 			vs <= vs;
-		end if;
-	
+		end if;	
 	end if;
-	end process;
+end process;
+
+signal nx : double:= 4.0;
+signal z : Complex32;
+signal c : Complex32;
+signal t : integer;
+
+process(mandel_calc) begin
+	for x in 0 to 512 loop
+		for y in 0 to 512 loop
+			c.r <= (2/512)*x;
+			c.i <= (2/512)*y + 1;
+			z.r <= 0.0;
+			z.i <= 0.0;
+			t <= 0;
+			while (z.r*z.r + z.i*z.i) < 4.0 and t < 255 loop
+				z <= z*z + c;
+				t <= t + 1;
+			end loop;
+			t = t*15;
+			--memória kell ide
+		end loop;
+	end loop;
+end process;
+
 
 
 end Behavioral;
