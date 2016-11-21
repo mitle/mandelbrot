@@ -43,18 +43,6 @@ set_property PACKAGE_PIN P16 [get_ports {reset}];  # "BTNC"
 set_property PACKAGE_PIN Y9 [get_ports {clk_board}];  # "GCLK"
 
 # ----------------------------------------------------------------------------
-# User DIP Switches - Bank 35
-# ---------------------------------------------------------------------------- 
-set_property PACKAGE_PIN F22 [get_ports {disable[0]}];  # "SW0"
-set_property PACKAGE_PIN G22 [get_ports {disable[1]}];  # "SW1"
-set_property PACKAGE_PIN H22 [get_ports {disable[2]}];  # "SW2"
-#set_property PACKAGE_PIN F21 [get_ports {SW3}];  # "SW3"
-#set_property PACKAGE_PIN H19 [get_ports {SW4}];  # "SW4"
-#set_property PACKAGE_PIN H18 [get_ports {SW5}];  # "SW5"
-#set_property PACKAGE_PIN H17 [get_ports {SW6}];  # "SW6"
-#set_property PACKAGE_PIN M15 [get_ports {SW7}];  # "SW7"
-
-# ----------------------------------------------------------------------------
 # IOSTANDARD Constraints
 #
 # Note that these IOSTANDARD constraints are applied to all IOs currently
@@ -81,7 +69,7 @@ set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 34]];
 # set_property IOSTANDARD LVCMOS33 [get_ports -of_objects [get_iobanks 35]];
 # set_property IOSTANDARD LVCMOS25 [get_ports -of_objects [get_iobanks 35]];
 
-set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 35]];
+#set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 35]];
 
 # Note that the bank voltage for IO Bank 13 is fixed to 3.3V on ZedBoard. 
 set_property IOSTANDARD LVCMOS33 [get_ports -of_objects [get_iobanks 13]];
