@@ -51,12 +51,10 @@ port (
  );
 end component;
 
-constant width      : integer := 640;
-constant height     : integer := 480;
 
 signal clk, hs, vs  : STD_LOGIC := '0';
-signal hsc          : unsigned(9 downto 0) := (others => '0');
-signal vsc          : unsigned(9 downto 0) := (others => '0');
+signal hsc          : unsigned(10 downto 0) := (others => '0');
+signal vsc          : unsigned(10 downto 0) := (others => '0');
 signal tmp          : STD_LOGIC_VECTOR(11 downto 0) := (others => '0');
 signal tmp_v        : STD_LOGIC_VECTOR(5 downto 0) := (others => '0');
 --signal enable_out   : STD_LOGIC := '0';
@@ -69,7 +67,7 @@ begin
 --   elsif (clk'event and clk='1') then
 --       if(hsc = ) then
 --           enable_out <= '1';
---       elsif(hsc = width+3 or vsc = height-1) then
+--       elsif(hsc = 640+3 or vsc = 480-1) then
 --           enable_out <= '0';
 --       else
 --           enable_out <= enable_out;
@@ -85,7 +83,7 @@ begin
     if (clk'event and clk='1') then
 
         --if( enable_out = '1' ) then
-        if( hsc < width and vsc < height) then
+        if( hsc < 1024 and vsc < 768) then
             if (disable(0) = '1' ) then
                 red   <= (others => '0');
             else
@@ -124,14 +122,14 @@ end process;
 counter_HS: process(clk)
 begin
     if (clk'event and clk='1') then
-        if (hsc = width+16-1) then
+        if (hsc = 1024+24-1) then
             hs <= '0';
-        elsif (hsc = width+16+96-1) then
+        elsif (hsc = 1024+24+136-1) then
             hs <= '1';
         else
             hs <= hs;
         end if;
-        if (hsc = 800-1) then
+        if (hsc = 1344-1) then
             hsc <= (others => '0');
         else
             hsc <= hsc + 1;
@@ -142,15 +140,15 @@ end process;
 counter_VS: process(clk)
 begin
     if (clk'event and clk='1') then
-        if (hsc = 800-1) then 
-            if (vsc = height+10-1) then
+        if (hsc = 1344-1) then 
+            if (vsc = 768+3-1) then
                 vs <= '0';
-            elsif (vsc = height+10+2-1) then
+            elsif (vsc = 768+3+6-1) then
                 vs <= '1';
             else
                 vs <= vs;
             end if;
-            if (vsc = 525-1) then
+            if (vsc = 806-1) then
                 vsc <= (others => '0');
             else
                 vsc <= vsc + 1;
