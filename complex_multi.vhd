@@ -87,7 +87,7 @@ package body complex_numbers is
 	end "*";
 end complex_numbers;
 
-	signal hc :unsigned (9 downto 0); 
+	signal hc :unsigned (10 downto 0); 
 	signal vc :unsigned (9 downto 0); 
 	signal hs :STD_LOGIC;
 	signal vs :STD_LOGIC;
