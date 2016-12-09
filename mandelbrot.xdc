@@ -1,7 +1,7 @@
 # ----------------------------------------------------------------------------
 # User LEDs - Bank 33
 # ---------------------------------------------------------------------------- 
-#set_property PACKAGE_PIN T22 [get_ports {LD0}];  # "LD0"
+set_property PACKAGE_PIN T22 [get_ports {led}];  # "LD0"
 #set_property PACKAGE_PIN T21 [get_ports {LD1}];  # "LD1"
 #set_property PACKAGE_PIN U22 [get_ports {LD2}];  # "LD2"
 #set_property PACKAGE_PIN U21 [get_ports {LD3}];  # "LD3"
@@ -34,7 +34,7 @@ set_property PACKAGE_PIN Y19  [get_ports {vs_o}];  # "VGA-VS"
 set_property PACKAGE_PIN P16 [get_ports {reset}];  # "BTNC"
 #set_property PACKAGE_PIN R16 [get_ports {BTND}];  # "BTND"
 #set_property PACKAGE_PIN N15 [get_ports {BTNL}];  # "BTNL"
-#set_property PACKAGE_PIN R18 [get_ports {BTNR}];  # "BTNR"
+set_property PACKAGE_PIN R18 [get_ports {button}];  # "BTNR"
 #set_property PACKAGE_PIN T18 [get_ports {BTNU}];  # "BTNU"
 
 # ----------------------------------------------------------------------------
