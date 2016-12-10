@@ -263,9 +263,12 @@ if( clk'event and clk = '1') then
         ci <= X"0000000000000000"; --ci_bal_felso;
         zr <= X"0000000000000000";
         zi <= X"0000000000000000";
-		
 		delta_valid <= '1';--meg még a nagyítási faktor
-		
+	else
+		cr <= next_pixel_cr;
+		ci <= next_pixel_ci;
+		zr <= mr;
+		zi <= mi;
 	end if;
 		
 	if (state = iter) then
@@ -277,11 +280,7 @@ if( clk'event and clk = '1') then
 		memory_in_data(11 downto 4) <= std_logic_vector(t(7 downto 0));	
 		addra <= std_logic_vector(px(7 downto 0)) & std_logic_vector(py(7 downto 0));
 
-		t <= (others => '0');
-		
-		cr <= next_pixel_cr;
-		ci <= next_pixel_ci;
-				
+		t <= (others => '0');		
 		if(px = 512-1) then
 			if(py = 512-1)then
 				py <= (others => '0');
@@ -292,17 +291,12 @@ if( clk'event and clk = '1') then
 			end if;		
 		else
 			px <= px+1;
-		end if;
-		
-		zr <= X"0000000000000000";
-		zi <= X"0000000000000000";		
+		end if;	
 	end if;
 	 
 	 
 	 if (state = nextiter) then
 	    t <= t+1;
-	 	zr <= mr;
-	 	zi <= mi;
 	 end if;
 
 end if;
