@@ -302,7 +302,7 @@ if( clk'event and clk = '1') then
 end if;
 end process;
 
-NEXT_STATE_DECODE: process (state)
+NEXT_STATE_DECODE: process (clk, state)
 begin
 next_state <= state;
  case (state) is
