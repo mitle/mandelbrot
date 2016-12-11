@@ -80,8 +80,8 @@ signal nx : STD_LOGIC_VECTOR(63 DOWNTO 0):= X"4010000000000000" ;
 --signal nx_valid : std_logic:='0'; --nem hasznÃ¡ljuk
 
 
-signal zr : STD_LOGIC_VECTOR(63 DOWNTO 0);
-signal zi : STD_LOGIC_VECTOR(63 DOWNTO 0);
+signal zr : STD_LOGIC_VECTOR(63 DOWNTO 0) := (others => '0');
+signal zi : STD_LOGIC_VECTOR(63 DOWNTO 0) := (others => '0');
 signal zr_valid : std_logic:='0';
 signal zi_valid : std_logic:='0';
 
@@ -92,7 +92,7 @@ signal cr_valid : std_logic:= '0';
 signal ci_valid : std_logic:= '0';
 
 -- z*z+c for the next iteration
-signal mr,mi : STD_LOGIC_VECTOR(63 DOWNTO 0);
+signal mr,mi : STD_LOGIC_VECTOR(63 DOWNTO 0) := (others => '0');
 
 
 --Number of iterations
@@ -201,7 +201,7 @@ signal shift_v : STD_LOGIC_VECTOR(29-1 downto 0);
 ----------------------------------------------------------------------------------------------------------------
 -- current pixel coordinates on the 512x512 screen
 -- 
-signal px, py 			: unsigned(10 downto 0) :=  (others => '0'); 
+signal px, py 			: unsigned(10 downto 0) := (others => '0'); 
 
 -- delta value between pixels
 signal delta 			: STD_LOGIC_VECTOR(63 DOWNTO 0) := X"3f70000000000000"; -- 2/512
@@ -210,7 +210,6 @@ signal delta_valid		: std_logic:='0';
 
 -- 65 MHz clock signal
 signal clk : STD_LOGIC;
-
 
 begin
 
@@ -225,12 +224,11 @@ begin
 	end if;
 end process;
 
-
 OUTPUT_DECODE: process (clk)
 begin
 if( clk'event and clk = '1') then
 	if (state = var) then
-	    --pihen a gÃ©p
+	    --pihen a gép
 	    led <= '1';
 	else
 	    led <= '0';
@@ -245,6 +243,8 @@ if( clk'event and clk = '1') then
 	end if;
 	
 	if (state = start or state = nextiter) then
+        zr <= mr;
+        zi <= mi;
         zr_valid <= '1';
         zi_valid <= '1';
     else
@@ -252,31 +252,25 @@ if( clk'event and clk = '1') then
         zi_valid <= '0';       
     end if;
 	
-	if (state = itervege) then
-	   wea <= '1';
-	else
-	   wea <= '0';
-	end if;
-	
 	if (state = start or state = itervege) then
-	    cr <= X"0000000000000000"; --cr_bal_felso; --meg mÃ©g a nagyÃ­tÃ¡si faktor
-        ci <= X"0000000000000000"; --ci_bal_felso;
+	    cr <= X"bfe1a52612dce094"; --cr_bal_felso; --meg még a nagyítási faktor
+        ci <= X"bfe4170151232a31"; --ci_bal_felso;
         zr <= X"0000000000000000";
         zi <= X"0000000000000000";
-		delta_valid <= '1';--meg mÃ©g a nagyÃ­tÃ¡si faktor
+		delta_valid <= '1';--meg még a nagyítási faktor
 	else
 		cr <= next_pixel_cr;
 		ci <= next_pixel_ci;
-		zr <= mr;
-		zi <= mi;
+		delta_valid <= '0';
 	end if;
 		
 	if (state = iter) then
-        --szÃ¡molgatunk...
-        --szÃ¡molgatunk...
+        --számolgatunk...
+        --számolgatunk...
 	end if;
 	
 	if (state = itervege) then
+	    wea <= '1';
 		memory_in_data(11 downto 4) <= std_logic_vector(t(7 downto 0));	
 		addra <= std_logic_vector(px(7 downto 0)) & std_logic_vector(py(7 downto 0));
 
@@ -291,7 +285,9 @@ if( clk'event and clk = '1') then
 			end if;		
 		else
 			px <= px+1;
-		end if;	
+		end if;
+	else
+	   wea <= '0';
 	end if;
 	 
 	 
@@ -302,7 +298,7 @@ if( clk'event and clk = '1') then
 end if;
 end process;
 
-NEXT_STATE_DECODE: process (clk, state)
+NEXT_STATE_DECODE: process (clk,state)
 begin
 next_state <= state;
  case (state) is
@@ -352,7 +348,7 @@ begin
   end if;
 end process;
 
-mentes_next: process(clk,next_r_valid)
+mentes_next: process(clk)
 begin
 	if( clk'event and clk = '1') then
 		if(next_r_valid = '1') then
@@ -375,7 +371,7 @@ begin
 	end if;
 end process;
 
-mentes: process(clk,ki_add2_r_valid)
+mentes: process(clk)
 begin
 	if( clk'event and clk = '1') then
 		if(ki_add2_r_valid = '1') then
