@@ -4,6 +4,8 @@ use IEEE.NUMERIC_STD.ALL;
 
 
 entity mandelbrot is
+generic(  sizeX          : integer := 512;  
+          sizeY          : integer := 512);
 Port (    red       : out STD_LOGIC_VECTOR (3 downto 0) := "0000";
           green     : out STD_LOGIC_VECTOR (3 downto 0) := "0000";
           blue      : out STD_LOGIC_VECTOR (3 downto 0) := "0000";
@@ -11,7 +13,7 @@ Port (    red       : out STD_LOGIC_VECTOR (3 downto 0) := "0000";
           vs_o      : out STD_LOGIC;
           clk_board : in STD_LOGIC := '0';
           reset     : in STD_LOGIC := '0';
-          led       : out STD_LOGIC := '0';
+          led       : out STD_LOGIC_VECTOR (2 downto 0) := "000";
           button    : in STD_LOGIC := '0';
           disable   : in STD_LOGIC_VECTOR (2 downto 0) := "000");
 end mandelbrot;
@@ -94,6 +96,9 @@ signal ci_valid : std_logic:= '0';
 -- z*z+c for the next iteration
 signal mr,mi : STD_LOGIC_VECTOR(63 DOWNTO 0) := (others => '0');
 
+--cr, ci mentes bal felso sarok
+signal mcr,mci : STD_LOGIC_VECTOR(63 DOWNTO 0) := (others => '0');
+
 
 --Number of iterations
 signal t : unsigned(10 downto 0) :=  (others => '0');
@@ -139,7 +144,7 @@ signal ki_comparator_valid:std_logic:='0';
 signal next_i_result:STD_LOGIC_VECTOR(63 DOWNTO 0);
 signal next_r_result:STD_LOGIC_VECTOR(63 DOWNTO 0);
 
-signal next_pixel_cr:STD_LOGIC_VECTOR(63 DOWNTO 0);
+signal next_pixel_cr:STD_LOGIC_VECTOR(63 DOWNTO 0) := X"bff41dd855848f6b";
 signal next_pixel_ci:STD_LOGIC_VECTOR(63 DOWNTO 0);
 
 signal next_i_valid:std_logic:='0';
@@ -147,7 +152,7 @@ signal next_r_valid:std_logic:='0';
 
 
 
-type allapot is (var,start,iter,itervege,nextiter,masolas);
+type allapot is (var,start,iter,itervege,t_null,sorvege,nextiter);
 signal state, next_state :allapot;
 
 ----------------------------------------------------------------------------------------------------------------
@@ -188,6 +193,8 @@ signal vsc          : unsigned(10 downto 0) := (others => '0');
 --signal tmp_H        : STD_LOGIC_VECTOR(5 downto 0) := (others => '0');
 --signal tmp_L        : STD_LOGIC_VECTOR(5 downto 0) := (others => '0');
 signal enable_out : STD_LOGIC := '0';
+signal enable_drawout : STD_LOGIC := '0';
+
 
 ----------------------------------------------------------------------------------------------------------------
 -- 29s shift register signals for delays
@@ -201,11 +208,19 @@ signal shift_v : STD_LOGIC_VECTOR(29-1 downto 0);
 ----------------------------------------------------------------------------------------------------------------
 -- current pixel coordinates on the 512x512 screen
 -- 
-signal px, py 			: unsigned(10 downto 0) := (others => '0'); 
+signal px, py 			: unsigned(8 downto 0) := (others => '0'); 
 
 -- delta value between pixels
 signal delta 			: STD_LOGIC_VECTOR(63 DOWNTO 0) := X"3f70000000000000"; -- 2/512
-signal delta_valid		: std_logic:='0';
+signal delta_valid_r	: std_logic:='0';
+signal delta_valid_i	: std_logic:='0';
+
+
+--varas allapotba menjunk
+signal go_to_var        : std_logic:='0';
+
+signal sorvegen         : std_logic:='0';
+
 
 
 -- 65 MHz clock signal
@@ -228,84 +243,133 @@ OUTPUT_DECODE: process (clk)
 begin
 if( clk'event and clk = '1') then
 	if (state = var) then
-	    --pihen a gép
-	    led <= '1';
+	    led(0) <= '1';
+	    go_to_var <= '0';
 	else
-	    led <= '0';
+	    led(0) <= '0';
+	    go_to_var <= go_to_var;
 	end if;
 	
-	if (state = start or state = nextiter or state = itervege) then
-	   	cr_valid <= '1';
-        ci_valid <= '1';
-	else
-		cr_valid <= '0';
-        ci_valid <= '0';	   
-	end if;
-	
-	if (state = start or state = nextiter) then
-        zr <= mr;
-        zi <= mi;
-        zr_valid <= '1';
-        zi_valid <= '1';
+	if (state = start) then
+        cr <= X"bff41dd855848f6b"; --cr_bal_felso; --meg mï¿½g a nagyï¿½tï¿½si faktor
+        ci <= X"bfe48a5c66e23f60"; --ci_bal_felso;
+        mcr <= X"bff41dd855848f6b";
+        mci <= X"bfe48a5c66e23f60";
+    elsif (state = itervege) then
+    	cr <= next_pixel_cr;
+        ci <= ci;
+    elsif (state = sorvege) then
+        cr <= mcr;
+        ci <= next_pixel_ci;
     else
-        zr_valid <= '0';
-        zi_valid <= '0';       
+        mcr <= mcr;
+        mci <= mci;
+        cr <= cr;
+        ci <= ci;
     end if;
 	
-	if (state = start or state = itervege) then
-	    cr <= X"bfe1a52612dce094"; --cr_bal_felso; --meg még a nagyítási faktor
-        ci <= X"bfe4170151232a31"; --ci_bal_felso;
+	if (state = start or state = nextiter or state = t_null) then
+	   	cr_valid <= '1';
+        ci_valid <= '1';
+        zr_valid <= '1';
+        zi_valid <= '1';
+	else
+		cr_valid <= '0';
+        ci_valid <= '0';
+        zr_valid <= '0';
+        zi_valid <= '0';  	   
+	end if;
+	
+	if (state = nextiter) then
+        zr <= mr;
+        zi <= mi;
+    elsif (state = start or state = t_null) then
         zr <= X"0000000000000000";
         zi <= X"0000000000000000";
-		delta_valid <= '1';--meg még a nagyítási faktor
+    else
+        zr <= zr;
+        zi <= zi;
+    end if;
+	
+	if (state = start or state = t_null) then
+		delta_valid_r <= '1';
 	else
-		cr <= next_pixel_cr;
-		ci <= next_pixel_ci;
-		delta_valid <= '0';
+		delta_valid_r <= '0';
+	end if;
+	
+	if (state = start or state = sorvege) then
+        delta_valid_i <= '1';
+    else
+        delta_valid_i <= '0';
+    end if;
+	
+	
+	if ( state = sorvege ) then
+
+	   if(py = sizeY-1)then
+           py <= (others => '0');
+       else
+           py <= py + 1;    
+       end if;
+
 	end if;
 		
 	if (state = iter) then
-        --számolgatunk...
-        --számolgatunk...
+        --szï¿½molgatunk...
+        --szï¿½molgatunk...
 	end if;
 	
 	if (state = itervege) then
 	    wea <= '1';
 		memory_in_data(11 downto 4) <= std_logic_vector(t(7 downto 0));	
+		memory_in_data(3 downto 0) <= X"F";
 		addra <= std_logic_vector(px(7 downto 0)) & std_logic_vector(py(7 downto 0));
 
-		t <= (others => '0');		
-		if(px = 512-1) then
-			if(py = 512-1)then
-				py <= (others => '0');
-				px <= (others => '0');
-			else
-				px <= (others => '0');
-				py <= py + 1;	
-			end if;		
+		if(px = sizeX-1) then
+		    px <= (others => '0');
 		else
 			px <= px+1;
 		end if;
 	else
 	   wea <= '0';
 	end if;
+	
+	if(px = sizeX-1) then
+	   sorvegen <= '1';
+	else
+	   sorvegen <= '0';
+	end if;
+	
+	
+    if(px = sizeX-1 and py = sizeY-1) then
+       go_to_var <= '1';
+    else
+       go_to_var <= '0';
+    end if;
 	 
-	 
-	 if (state = nextiter) then
+	if (state = nextiter) then
 	    t <= t+1;
-	 end if;
+	elsif( state = start or  state = t_null) then
+        t <= (others => '0');
+	else
+	    t <= t;
+	end if;
 
 end if;
 end process;
 
-NEXT_STATE_DECODE: process (clk,state)
+led(2) <= go_to_var;
+
+NEXT_STATE_DECODE: process (state, button, ki_comparator_valid, comparator_result, t, go_to_var, sorvegen)
 begin
 next_state <= state;
  case (state) is
 	--inicializÃ¡ljuk az elsÅ‘ pixel helyÃ©t
 	when var =>
-	   if  (button = '0') then
+	   if  (button = '1') then
 		  next_state <= start;
+	   else
+	      next_state <= var;
 	   end if;
 						  
 	when start =>
@@ -320,16 +384,21 @@ next_state <= state;
 		 
 	when nextiter =>
 		next_state <= iter;
+	
+	when sorvege =>
+        next_state <= t_null;
 		
+    when t_null =>
+        next_state <= iter;
+            
     when itervege =>
-		if (px = 512-1 and py = 512-1) then
+		if (go_to_var = '1') then
 			next_state <= var;
+		elsif (sorvegen = '1') then
+		    next_state <= sorvege; 
 		else
-			next_state <= iter;
+			next_state <= t_null;
 		end if;
-		
-	when others =>
-		  next_state <= var;
  end case;      
 end process;
  
@@ -340,7 +409,7 @@ begin
 	  if(wea = '1') then
 		  framebuffer(to_integer(unsigned(addra))) <= memory_in_data;
 	  end if;
-	  if(enable_out = '1') then 
+	  if(enable_drawout = '1') then 
 		  color_of_pixel <= framebuffer(to_integer(unsigned(hsc(7 downto 0) & vsc(7 downto 0))));
 	  else
 	      color_of_pixel <= (others => '0');
@@ -352,8 +421,8 @@ mentes_next: process(clk)
 begin
 	if( clk'event and clk = '1') then
 		if(next_r_valid = '1') then
-			next_pixel_cr <= add2_r_result;
-			next_pixel_ci <= add2_i_result;
+			next_pixel_cr <= next_r_result;
+			next_pixel_ci <= next_i_result;
 		else
 			next_pixel_cr <= next_pixel_cr;
 			next_pixel_ci <= next_pixel_ci;
@@ -382,6 +451,21 @@ begin
 			mi <= mi;
 		end if;	  		
 	end if;
+end process;
+
+enable_drawout_proc: process(clk, reset)
+begin
+   if (reset = '1') then
+       enable_drawout <= '0';
+   elsif (clk'event and clk='1') then
+       if( hsc = 0 and vsc < sizeY-1) then
+           enable_drawout <= '1';
+       elsif(hsc = sizeX-1) then
+           enable_drawout <= '0';
+       else
+           enable_drawout <= enable_drawout;
+       end if;
+   end if;
 end process;
 
 
@@ -439,11 +523,8 @@ port map (
    clk_out1 => clk              
 );
 
-kiskacsa: process(hs, vs)
-begin
-   hs_o <= hs;
-   vs_o <= vs;
-end process;
+hs_o <= hs;
+vs_o <= vs;
 
 counter_HS: process(clk)
 begin
@@ -621,7 +702,7 @@ comparator: compare
 delta_adder_r: adder
 		PORT MAP (
 		  aclk => clk,
-		  s_axis_a_tvalid => delta_valid,
+		  s_axis_a_tvalid => delta_valid_r,
 		  s_axis_a_tdata => delta,
 		  s_axis_b_tvalid => cr_valid,
 		  s_axis_b_tdata => cr,
@@ -632,7 +713,7 @@ delta_adder_r: adder
 delta_adder_i: adder
 		PORT MAP (
 		  aclk => clk,
-		  s_axis_a_tvalid => delta_valid,
+		  s_axis_a_tvalid => delta_valid_i,
 		  s_axis_a_tdata => delta,
 		  s_axis_b_tvalid => ci_valid,
 		  s_axis_b_tdata => ci,
