@@ -321,9 +321,10 @@ if( clk'event and clk = '1') then
 	
 	if (state = itervege) then
 	    wea <= '1';
-		memory_in_data(11 downto 4) <= std_logic_vector(t(7 downto 0));	
-		memory_in_data(3 downto 0) <= X"F";
-		addra <= std_logic_vector(px(7 downto 0)) & std_logic_vector(py(7 downto 0));
+		memory_in_data(11 downto 8) <= std_logic_vector(t(3 downto 0));
+		memory_in_data(7 downto 4)  <= std_logic_vector(t(3 downto 0));	
+		memory_in_data(3 downto 0)  <= std_logic_vector(t(3 downto 0));
+		addra <= px & py;
 
 		if(px = sizeX-1) then
 		    px <= (others => '0');
@@ -410,7 +411,7 @@ begin
 		  framebuffer(to_integer(unsigned(addra))) <= memory_in_data;
 	  end if;
 	  if(enable_drawout = '1') then 
-		  color_of_pixel <= framebuffer(to_integer(unsigned(hsc(7 downto 0) & vsc(7 downto 0))));
+		  color_of_pixel <= framebuffer(to_integer(unsigned(hsc(8 downto 0) & vsc(8 downto 0))));
 	  else
 	      color_of_pixel <= (others => '0');
 	  end if;
