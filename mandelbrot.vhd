@@ -144,7 +144,7 @@ signal ki_comparator_valid:std_logic:='0';
 signal next_i_result:STD_LOGIC_VECTOR(63 DOWNTO 0);
 signal next_r_result:STD_LOGIC_VECTOR(63 DOWNTO 0);
 
-signal next_pixel_cr:STD_LOGIC_VECTOR(63 DOWNTO 0) := X"bff41dd855848f6b";
+signal next_pixel_cr:STD_LOGIC_VECTOR(63 DOWNTO 0);
 signal next_pixel_ci:STD_LOGIC_VECTOR(63 DOWNTO 0);
 
 signal next_i_valid:std_logic:='0';
@@ -161,7 +161,7 @@ signal state, next_state :allapot;
 constant C_RAM_WIDTH  : integer := 12;            		                  -- Specify RAM data width
 constant C_RAM_DEPTH  : integer := 512*512;                               -- Specify RAM depth (number of entries) 
 
-signal addra	      : std_logic_vector(16-1 downto 0);                  -- RAM input data address
+signal addra	      : std_logic_vector(18-1 downto 0);                  -- RAM input data address
 signal wea            : std_logic;                       			      -- Write enable
 signal memory_in_data : std_logic_vector(C_RAM_WIDTH-1 downto 0); 		  -- RAM input data
 signal color_of_pixel : std_logic_vector(C_RAM_WIDTH-1 downto 0) ;        -- RAM output data
@@ -251,10 +251,10 @@ if( clk'event and clk = '1') then
 	end if;
 	
 	if (state = start) then
-        cr <= X"bff41dd855848f6b"; --cr_bal_felso; --meg m�g a nagy�t�si faktor
-        ci <= X"bfe48a5c66e23f60"; --ci_bal_felso;
-        mcr <= X"bff41dd855848f6b";
-        mci <= X"bfe48a5c66e23f60";
+        cr <= X"bfd81e37326e8629"; --cr_bal_felso; --meg m�g a nagy�t�si faktor
+        ci <= X"bfe390b5dd1c7560"; --ci_bal_felso;
+        mcr <= X"bfd81e37326e8629";
+        mci <= X"bfe390b5dd1c7560";
     elsif (state = itervege) then
     	cr <= next_pixel_cr;
         ci <= ci;
@@ -269,16 +269,20 @@ if( clk'event and clk = '1') then
     end if;
 	
 	if (state = start or state = nextiter or state = t_null) then
-	   	cr_valid <= '1';
-        ci_valid <= '1';
         zr_valid <= '1';
         zi_valid <= '1';
 	else
-		cr_valid <= '0';
-        ci_valid <= '0';
         zr_valid <= '0';
         zi_valid <= '0';  	   
 	end if;
+	
+    if (state = start or state = nextiter or state = t_null or state = sorvege) then
+        cr_valid <= '1';
+        ci_valid <= '1';
+    else
+        cr_valid <= '0';
+        ci_valid <= '0';     
+    end if;
 	
 	if (state = nextiter) then
         zr <= mr;
@@ -324,7 +328,7 @@ if( clk'event and clk = '1') then
 		memory_in_data(11 downto 8) <= std_logic_vector(t(3 downto 0));
 		memory_in_data(7 downto 4)  <= std_logic_vector(t(3 downto 0));	
 		memory_in_data(3 downto 0)  <= std_logic_vector(t(3 downto 0));
-		addra <= px & py;
+		addra <= std_logic_vector(px) & std_logic_vector(py);
 
 		if(px = sizeX-1) then
 		    px <= (others => '0');
@@ -377,10 +381,16 @@ next_state <= state;
 		next_state <= iter;
 					  
 	when iter =>
-		if (ki_comparator_valid = '1' and comparator_result(0) = '1' and t < 255) then
-			next_state <= nextiter;
-		elsif ((ki_comparator_valid = '1' and comparator_result(0) = '0') or t >= 255) then
-			next_state <= itervege;
+		if (ki_comparator_valid = '1') then
+			if(comparator_result(0) = '1' and  t < 255) then
+			    next_state <= nextiter;
+			--end if;
+		    --if (comparator_result(0) = '0' or t >= 255) then
+		    else
+			    next_state <= itervege;
+			end if;
+		else
+		    next_state <= iter;
 		end if;
 		 
 	when nextiter =>
