@@ -327,7 +327,7 @@ if( clk'event and clk = '1') then
     
     if ( state = zoom ) then
         if(timer = 0) then   
-            delta(63 downto 52) <=  std_logic_vector( unsigned(delta(63 downto 52)) +1 );
+            delta(62 downto 51) <=  std_logic_vector( unsigned(delta(62 downto 51)) -1 );
         end if; 
         if(timer = 65_000_000 - 1) then 
            exit_zoom_to_var <= '1';    
@@ -558,9 +558,9 @@ begin
    if (reset = '1') then
        enable_out <= '0';
    elsif (clk'event and clk='1') then
-       if(hsc = 0) then
+       if(hsc = 1) then
            enable_out <= '1';
-       elsif(hsc = hor_visual or vsc = ver_visual) then
+       elsif(hsc = hor_visual-1 or vsc = ver_visual) then
            enable_out <= '0';
        else
            enable_out <= enable_out;
