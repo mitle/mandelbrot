@@ -1,9 +1,9 @@
 # ----------------------------------------------------------------------------
 # User LEDs - Bank 33
 # ---------------------------------------------------------------------------- 
-set_property PACKAGE_PIN T22 [get_ports {led}];  # "LD0"
-#set_property PACKAGE_PIN T21 [get_ports {LD1}];  # "LD1"
-#set_property PACKAGE_PIN U22 [get_ports {LD2}];  # "LD2"
+set_property PACKAGE_PIN T22 [get_ports {led[0]}];  # "LD0"
+set_property PACKAGE_PIN T21 [get_ports {led[1]}];  # "LD1"
+set_property PACKAGE_PIN U22 [get_ports {led[2]}];  # "LD2"
 #set_property PACKAGE_PIN U21 [get_ports {LD3}];  # "LD3"
 #set_property PACKAGE_PIN V22 [get_ports {LD4}];  # "LD4"
 #set_property PACKAGE_PIN W22 [get_ports {LD5}];  # "LD5"
@@ -31,11 +31,24 @@ set_property PACKAGE_PIN Y19  [get_ports {vs_o}];  # "VGA-VS"
 # ----------------------------------------------------------------------------
 # User Push Buttons - Bank 34
 # ---------------------------------------------------------------------------- 
-set_property PACKAGE_PIN P16 [get_ports {reset}];  # "BTNC"
-#set_property PACKAGE_PIN R16 [get_ports {BTND}];  # "BTND"
-#set_property PACKAGE_PIN N15 [get_ports {BTNL}];  # "BTNL"
-set_property PACKAGE_PIN R18 [get_ports {button}];  # "BTNR"
-#set_property PACKAGE_PIN T18 [get_ports {BTNU}];  # "BTNU"
+set_property PACKAGE_PIN P16 [get_ports {zoom_btn}];  # "BTNC"
+set_property PACKAGE_PIN R16 [get_ports {move_btn[0]}];  # "BTND"
+set_property PACKAGE_PIN N15 [get_ports {move_btn[2]}];  # "BTNL"
+set_property PACKAGE_PIN R18 [get_ports {move_btn[3]}];  # "BTNR"
+set_property PACKAGE_PIN T18 [get_ports {move_btn[1]}];  # "BTNU"
+
+# ----------------------------------------------------------------------------
+# User DIP Switches - Bank 35
+# ---------------------------------------------------------------------------- 
+set_property PACKAGE_PIN F22 [get_ports {disable[0]}];  # "SW0"
+set_property PACKAGE_PIN G22 [get_ports {disable[1]}];  # "SW1"
+set_property PACKAGE_PIN H22 [get_ports {disable[2]}];  # "SW2"
+#set_property PACKAGE_PIN F21 [get_ports {SW3}];  # "SW3"
+#set_property PACKAGE_PIN H19 [get_ports {SW4}];  # "SW4"
+#set_property PACKAGE_PIN H18 [get_ports {SW5}];  # "SW5"
+set_property PACKAGE_PIN H17 [get_ports {reset}];  # "SW6"
+set_property PACKAGE_PIN M15 [get_ports {start_btn}];  # "SW7"
+
 
 # ----------------------------------------------------------------------------
 # Clock Source - Bank 13
@@ -69,7 +82,7 @@ set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 34]];
 # set_property IOSTANDARD LVCMOS33 [get_ports -of_objects [get_iobanks 35]];
 # set_property IOSTANDARD LVCMOS25 [get_ports -of_objects [get_iobanks 35]];
 
-#set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 35]];
+set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 35]];
 
 # Note that the bank voltage for IO Bank 13 is fixed to 3.3V on ZedBoard. 
 set_property IOSTANDARD LVCMOS33 [get_ports -of_objects [get_iobanks 13]];

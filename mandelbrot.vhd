@@ -14,8 +14,11 @@ Port (    red       : out STD_LOGIC_VECTOR (3 downto 0) := "0000";
           clk_board : in STD_LOGIC := '0';
           reset     : in STD_LOGIC := '0';
           led       : out STD_LOGIC_VECTOR (2 downto 0) := "000";
-          button    : in STD_LOGIC := '0';
-          disable   : in STD_LOGIC_VECTOR (2 downto 0) := "000");
+          start_btn : in STD_LOGIC := '0';
+          disable   : in STD_LOGIC_VECTOR (2 downto 0) := "000";
+          move_btn  : in STD_LOGIC_VECTOR (3 downto 0) := "0000";
+          zoom_btn  : in STD_LOGIC := '0'
+          );
 end mandelbrot;
 
 architecture Behavioral of mandelbrot is
@@ -81,6 +84,7 @@ END COMPONENT;
 signal nx : STD_LOGIC_VECTOR(63 DOWNTO 0):= X"4010000000000000" ;
 --signal nx_valid : std_logic:='0'; --nem használjuk
 
+constant MAX_ITER  : integer := 256-1;
 
 signal zr : STD_LOGIC_VECTOR(63 DOWNTO 0) := (others => '0');
 signal zi : STD_LOGIC_VECTOR(63 DOWNTO 0) := (others => '0');
@@ -97,11 +101,19 @@ signal ci_valid : std_logic:= '0';
 signal mr,mi : STD_LOGIC_VECTOR(63 DOWNTO 0) := (others => '0');
 
 --cr, ci mentes bal felso sarok
-signal mcr,mci : STD_LOGIC_VECTOR(63 DOWNTO 0) := (others => '0');
+signal mcr,mci : STD_LOGIC_VECTOR(63 DOWNTO 0) := X"c000000000000000";
+signal mcr_valid,mci_valid : std_logic:= '0';
+
+--  move
+signal next_mcr_r_result,next_mci_u_result : STD_LOGIC_VECTOR(63 DOWNTO 0) := X"c000000000000000";
+signal next_mcr_r_valid,next_mci_u_valid : std_logic:= '0';
+
+signal next_mcr_l_result,next_mci_d_result : STD_LOGIC_VECTOR(63 DOWNTO 0) := X"c000000000000000";
+signal next_mcr_l_valid,next_mci_d_valid : std_logic:= '0';
 
 
 --Number of iterations
-signal t : unsigned(10 downto 0) :=  (others => '0');
+signal t : unsigned(11 downto 0) :=  (others => '0');
 
 -- Calculating r*r, i*i and r*i of the input z which is a complex number r+i*(i)
 signal mult1_result: STD_LOGIC_VECTOR(63 DOWNTO 0);
@@ -152,7 +164,7 @@ signal next_r_valid:std_logic:='0';
 
 
 
-type allapot is (var,start,iter,itervege,t_null,sorvege,nextiter);
+type allapot is (var,zoom,move,start,iter,itervege,t_null,sorvege,nextiter);
 signal state, next_state :allapot;
 
 ----------------------------------------------------------------------------------------------------------------
@@ -211,16 +223,25 @@ signal shift_v : STD_LOGIC_VECTOR(29-1 downto 0);
 signal px, py 			: unsigned(8 downto 0) := (others => '0'); 
 
 -- delta value between pixels
-signal delta 			: STD_LOGIC_VECTOR(63 DOWNTO 0) := X"3f70000000000000"; -- 2/512
+signal delta 			: STD_LOGIC_VECTOR(63 DOWNTO 0) := X"3f80000000000000"; -- 4/512
 signal delta_valid_r	: std_logic:='0';
 signal delta_valid_i	: std_logic:='0';
+
+signal move_delta       : STD_LOGIC_VECTOR(63 DOWNTO 0) := X"3ff0000000000000";
+signal move_r_valid	    : std_logic:='0';
+signal move_l_valid   	: std_logic:='0';
+signal move_d_valid	    : std_logic:='0';
+signal move_u_valid	    : std_logic:='0';
+
 
 
 --varas allapotba menjunk
 signal go_to_var        : std_logic:='0';
-
+signal exit_zoom_to_var : std_logic:='0';
 signal sorvegen         : std_logic:='0';
 
+
+signal timer:unsigned(27 downto 0);
 
 
 -- 65 MHz clock signal
@@ -251,16 +272,25 @@ if( clk'event and clk = '1') then
 	end if;
 	
 	if (state = start) then
-        cr <= X"bfd81e37326e8629"; --cr_bal_felso; --meg m�g a nagy�t�si faktor
-        ci <= X"bfe390b5dd1c7560"; --ci_bal_felso;
-        mcr <= X"bfd81e37326e8629";
-        mci <= X"bfe390b5dd1c7560";
+        cr <= X"c000000000000000"; --cr_bal_felso; --meg m�g a nagy�t�si faktor
+        ci <= X"c000000000000000"; --ci_bal_felso;
+        --mcr <= move_r_result;
+        --mci <= move_i_result;
     elsif (state = itervege) then
     	cr <= next_pixel_cr;
         ci <= ci;
     elsif (state = sorvege) then
         cr <= mcr;
         ci <= next_pixel_ci;
+    elsif (state = var) then
+        cr <= mcr;
+        ci <= mci;
+--    elsif (state = move) then
+--        if(move_btn(0) = '1' or move_btn(1) = '1') then 
+--            ci <= next_mcr;
+--        else
+--            cr <=
+--        end if;
     else
         mcr <= mcr;
         mci <= mci;
@@ -294,6 +324,21 @@ if( clk'event and clk = '1') then
         zr <= zr;
         zi <= zi;
     end if;
+    
+    if ( state = zoom ) then
+        if(timer = 0) then   
+            delta(63 downto 52) <=  std_logic_vector( unsigned(delta(63 downto 52)) +1 );
+        end if; 
+        if(timer = 65_000_000 - 1) then 
+           exit_zoom_to_var <= '1';    
+           timer <= (others => '0');
+        else
+           exit_zoom_to_var <= '0';
+           timer <= timer+1;
+        end if;   
+    else
+        delta <= delta;
+    end if;
 	
 	if (state = start or state = t_null) then
 		delta_valid_r <= '1';
@@ -315,7 +360,10 @@ if( clk'event and clk = '1') then
        else
            py <= py + 1;    
        end if;
-
+    elsif  (state = var) then
+       py <= (others => '0');
+    else
+       py <= py;
 	end if;
 		
 	if (state = iter) then
@@ -325,9 +373,10 @@ if( clk'event and clk = '1') then
 	
 	if (state = itervege) then
 	    wea <= '1';
-		memory_in_data(11 downto 8) <= std_logic_vector(t(3 downto 0));
-		memory_in_data(7 downto 4)  <= std_logic_vector(t(3 downto 0));	
-		memory_in_data(3 downto 0)  <= std_logic_vector(t(3 downto 0));
+	    memory_in_data <= std_logic_vector(t);
+		--memory_in_data(11 downto 8) <= std_logic_vector(t(3 downto 0));
+		--memory_in_data(7 downto 4)  <= std_logic_vector(t(3 downto 0));	
+		--memory_in_data(3 downto 0)  <= std_logic_vector(t(3 downto 0));
 		addra <= std_logic_vector(px) & std_logic_vector(py);
 
 		if(px = sizeX-1) then
@@ -335,8 +384,12 @@ if( clk'event and clk = '1') then
 		else
 			px <= px+1;
 		end if;
+	elsif  (state = var) then
+ 	   wea <= '0';
+       px <= (others => '0');
 	else
 	   wea <= '0';
+	   px <= px;
 	end if;
 	
 	if(px = sizeX-1) then
@@ -345,9 +398,15 @@ if( clk'event and clk = '1') then
 	   sorvegen <= '0';
 	end if;
 	
+	if( state = move ) then
+        led(2) <= '1';
+    else
+        led(2) <= '0';
+    end if;
+	
 	
     if(px = sizeX-1 and py = sizeY-1) then
-       go_to_var <= '1';
+       go_to_var <= '1'; 
     else
        go_to_var <= '0';
     end if;
@@ -363,16 +422,18 @@ if( clk'event and clk = '1') then
 end if;
 end process;
 
-led(2) <= go_to_var;
-
-NEXT_STATE_DECODE: process (state, button, ki_comparator_valid, comparator_result, t, go_to_var, sorvegen)
+NEXT_STATE_DECODE: process (state, start_btn, ki_comparator_valid, comparator_result, t, go_to_var, sorvegen, zoom_btn, move_btn)
 begin
 next_state <= state;
  case (state) is
 	--inicializáljuk az első pixel helyét
 	when var =>
-	   if  (button = '1') then
+	   if  (start_btn = '1') then
 		  next_state <= start;
+	   elsif(zoom_btn = '1') then
+          next_state <= zoom;
+       elsif(unsigned(move_btn) > 0) then
+          next_state <= move;
 	   else
 	      next_state <= var;
 	   end if;
@@ -382,7 +443,7 @@ next_state <= state;
 					  
 	when iter =>
 		if (ki_comparator_valid = '1') then
-			if(comparator_result(0) = '1' and  t < 255) then
+			if(comparator_result(0) = '1' and  t < MAX_ITER) then
 			    next_state <= nextiter;
 			--end if;
 		    --if (comparator_result(0) = '0' or t >= 255) then
@@ -410,22 +471,34 @@ next_state <= state;
 		else
 			next_state <= t_null;
 		end if;
+		
+	when zoom =>
+	    if (exit_zoom_to_var = '1') then
+            next_state <= var;
+	    else
+            next_state <= zoom;
+        end if;
+        
+    when move =>
+        next_state <= var;
  end case;      
 end process;
- 
+
 --RAM      
 memoria: process(clk)
 begin
-  if(clk'event and clk = '1') then
-	  if(wea = '1') then
-		  framebuffer(to_integer(unsigned(addra))) <= memory_in_data;
-	  end if;
-	  if(enable_drawout = '1') then 
-		  color_of_pixel <= framebuffer(to_integer(unsigned(hsc(8 downto 0) & vsc(8 downto 0))));
-	  else
-	      color_of_pixel <= (others => '0');
-	  end if;
-  end if;
+    if(clk'event and clk = '1') then
+        if(wea = '1') then
+            framebuffer(to_integer(unsigned(addra))) <= memory_in_data;
+        --elsif(reset = '1') then
+         --    framebuffer(to_integer(unsigned(hsc(8 downto 0) & vsc(8 downto 0)))) <= (others => '1');
+        end if;
+        if(enable_drawout = '1') then 
+            color_of_pixel <= framebuffer(to_integer(unsigned(hsc(8 downto 0) & vsc(8 downto 0))));
+        else
+            color_of_pixel <= (others => '1');
+        end if;
+    end if;
 end process;
 
 mentes_next: process(clk)
@@ -731,5 +804,54 @@ delta_adder_i: adder
 		  m_axis_result_tvalid => next_i_valid,
 		  m_axis_result_tdata => next_i_result 
 		);
+
+-- jobbra
+move_delta_adder_r: adder
+        PORT MAP (
+          aclk => clk,
+          s_axis_a_tvalid => move_r_valid,
+          s_axis_a_tdata => move_delta,
+          s_axis_b_tvalid => mcr_valid,
+          s_axis_b_tdata => mcr,
+          m_axis_result_tvalid => next_mcr_r_valid,
+          m_axis_result_tdata => next_mcr_r_result 
+        );
+
+-- balra
+move_delta_substracter_r: substract
+        PORT MAP (
+          aclk => clk,
+          s_axis_a_tvalid => move_l_valid,
+          s_axis_a_tdata => move_delta,
+          s_axis_b_tvalid => mcr_valid,
+          s_axis_b_tdata => mcr,
+          m_axis_result_tvalid => next_mcr_l_valid,
+          m_axis_result_tdata => next_mcr_l_result 
+        );
+
+-- lefele
+move_delta_adder_i: adder
+        PORT MAP (
+          aclk => clk,
+          s_axis_a_tvalid => move_d_valid,
+          s_axis_a_tdata => move_delta,
+          s_axis_b_tvalid => mci_valid,
+          s_axis_b_tdata => mci,
+          m_axis_result_tvalid => next_mci_d_valid,
+          m_axis_result_tdata => next_mci_d_result 
+        );
+
+-- felfele
+move_delta_substracter_i: substract
+        PORT MAP (
+          aclk => clk,
+          s_axis_a_tvalid => move_u_valid,
+          s_axis_a_tdata => move_delta,
+          s_axis_b_tvalid => mci_valid,
+          s_axis_b_tdata => mci,
+          m_axis_result_tvalid => next_mci_u_valid,
+          m_axis_result_tdata => next_mci_u_result 
+        );
+
 
 end Behavioral;
