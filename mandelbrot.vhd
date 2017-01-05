@@ -204,7 +204,7 @@ signal vsc          : unsigned(10 downto 0) := (others => '0');
 --signal tmp          : STD_LOGIC_VECTOR(11 downto 0) := (others => '0');
 --signal tmp_H        : STD_LOGIC_VECTOR(5 downto 0) := (others => '0');
 --signal tmp_L        : STD_LOGIC_VECTOR(5 downto 0) := (others => '0');
-signal enable_out : STD_LOGIC := '0';
+
 signal enable_drawout : STD_LOGIC := '0';
 
 
@@ -490,11 +490,9 @@ begin
     if(clk'event and clk = '1') then
         if(wea = '1') then
             framebuffer(to_integer(unsigned(addra))) <= memory_in_data;
-        --elsif(reset = '1') then
-         --    framebuffer(to_integer(unsigned(hsc(8 downto 0) & vsc(8 downto 0)))) <= (others => '1');
         end if;
         if(enable_drawout = '1') then 
-            color_of_pixel <= framebuffer(to_integer(unsigned(hsc(8 downto 0) & vsc(8 downto 0))));
+            color_of_pixel <= framebuffer(to_integer(unsigned((hsc(8 downto 0)-256) & (vsc(8 downto 0)-128))));
         else
             color_of_pixel <= (others => '1');
         end if;
@@ -542,31 +540,14 @@ begin
    if (reset = '1') then
        enable_drawout <= '0';
    elsif (clk'event and clk='1') then
-       if( hsc = 0 and vsc < sizeY-1) then
+       if( 256 < hsc and hsc < 512+256 and 128 < vsc and vsc < 512+128) then
            enable_drawout <= '1';
-       elsif(hsc = sizeX-1) then
+       else
            enable_drawout <= '0';
-       else
-           enable_drawout <= enable_drawout;
        end if;
    end if;
 end process;
 
-
-enable_out_proc: process(clk, reset)
-begin
-   if (reset = '1') then
-       enable_out <= '0';
-   elsif (clk'event and clk='1') then
-       if(hsc = 1) then
-           enable_out <= '1';
-       elsif(hsc = hor_visual-1 or vsc = ver_visual) then
-           enable_out <= '0';
-       else
-           enable_out <= enable_out;
-       end if;
-   end if;
-end process;
 
 --fancy test pattern for VGA output
 --tmp_H <= std_logic_vector(hsc(6 downto 3)) & std_logic_vector(vsc(5 downto 4));
@@ -577,7 +558,7 @@ end process;
 pattern: process(clk)
 begin
     if (clk'event and clk='1') then
-        if( enable_out = '1' ) then
+        if(hsc < hor_visual and vsc < ver_visual) then
             if (disable(0) = '1' ) then
                 red   <= (others => '0');
             else
